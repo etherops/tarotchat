@@ -1,14 +1,13 @@
 import random
 import argparse
-import openai
+from openai import OpenAI
 import os
 
 # Get the OpenAI API key from the environment variable
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
-if openai.api_key is None:
-    raise ValueError("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
-
+openai_client = OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY"),
+)
 
 # Define the 78 cards in the Rider-Waite Tarot deck with Major Arcana numbered
 tarot_deck = [
@@ -37,15 +36,23 @@ def draw_cards(num_cards, deck):
     return deck[:num_cards]
 
 def interpret_cards(question, cards):
-    response = openai.ChatCompletion.create(
-        model="gpt-4",  # Use the correct model name (like gpt-4 or gpt-3.5-turbo)
+    prompt = (
+        f"We are playing a game of tarot using the Rider-Waite deck.\n"
+        # f"The question is: {question}\n"
+        # f"The drawn cards are: {', '.join(cards)}\n"
+        "Please interpret these cards in response to the question.  Please give a brief description of the general "
+        "meaning of the card(s) followed by an interpretation of the draw based on the question asked."
+    )
+    response = openai_client.chat.completions.create(
+        model="gpt-3.5-turbo",  # Use the correct model name (like gpt-4 or gpt-3.5-turbo)
         messages=[
-            {"role": "system", "content": "You are a tarot card interpreter."},
+            {"role": "system", "content": prompt},
             {"role": "user", "content": f"Question: {question}"},
             {"role": "assistant", "content": f"Cards: {cards}"},
         ]
     )
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
+
 
 def tarot_game(num_cards, question=None):
     deck = tarot_deck.copy()
@@ -71,6 +78,7 @@ def tarot_game(num_cards, question=None):
                 print("Invalid choice. Please enter 'yes' or 'no'.")
 
 if __name__ == "__main__":
+    # models = openai_client.models.list()
     parser = argparse.ArgumentParser(description="Tarot Card Drawing Game")
     parser.add_argument(
         '--num-cards',
