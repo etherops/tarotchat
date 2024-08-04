@@ -59,23 +59,24 @@ def tarot_game(num_cards, question=None):
     cards = draw_cards(num_cards, deck)
     print(f"\nYour cards are: {', '.join(cards)}")
 
-    if question:
-        interpretation = interpret_cards(question, cards)
-        print(f"\nInterpretation based on your question:\n{interpretation}")
-    elif num_cards == 1:
-        while True:
-            clarifier_choice = input("Would you like to draw a clarifying card? (yes/no): ").lower()
-            if clarifier_choice == 'yes':
-                clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
-                print(f"\nYour clarifying card is: {clarifier[0]}")
-                cards.append(clarifier[0])
-                if question:
-                    interpretation = interpret_cards(question, cards)
-                    print(f"\nInterpretation based on your question with clarifiers:\n{interpretation}")
-            elif clarifier_choice == 'no':
-                break
-            else:
-                print("Invalid choice. Please enter 'yes' or 'no'.")
+    if not question:
+        return
+
+    interpretation = interpret_cards(question, cards)
+    print(f"\nInterpretation based on your question:\n{interpretation}")
+    while True:
+        clarifier_choice = input("Would you like to draw a clarifying card? (yes/no): ").lower()
+        if clarifier_choice == 'no':
+            break
+        if clarifier_choice == 'yes':
+            clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
+            print(f"\nYour clarifying card is: {clarifier[0]}")
+            cards.append(clarifier[0])
+            if question:
+                interpretation = interpret_cards(question, cards)
+                print(f"\nInterpretation based on your question with clarifiers:\n{interpretation}")
+        else:
+            print("Invalid choice. Please enter 'yes' or 'no'.")
 
 if __name__ == "__main__":
     # models = openai_client.models.list()
