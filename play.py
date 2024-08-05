@@ -4,7 +4,6 @@ from openai import OpenAI
 import os
 
 # Get the OpenAI API key from the environment variable
-
 openai_client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY"),
 )
@@ -30,28 +29,29 @@ tarot_deck = [
     "Page of Pentacles", "Knight of Pentacles", "Queen of Pentacles", "King of Pentacles"
 ]
 
+
 def draw_cards(num_cards, deck):
     """Draw a specified number of cards from the deck."""
     random.shuffle(deck)
     return deck[:num_cards]
 
-def interpret_cards(question, cards):
-    prompt = (
-        f"We are playing a game of tarot using the Rider-Waite deck.\n"
-        # f"The question is: {question}\n"
-        # f"The drawn cards are: {', '.join(cards)}\n"
-        "Please interpret these cards in response to the question.  Please give a brief description of the general "
-        "meaning of the card(s) followed by an interpretation of the draw based on the question asked."
-    )
+
+def interpret_cards(messages, question, cards):
+    # Append the user's question and drawn cards to the conversation
+    messages.append({"role": "user", "content": f"Question: {question}"})
+    messages.append({"role": "assistant", "content": f"Cards: {', '.join(cards)}"})
+
+    # Send the conversation to OpenAI for interpretation
     response = openai_client.chat.completions.create(
-        model="gpt-3.5-turbo",  # Use the correct model name (like gpt-4 or gpt-3.5-turbo)
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": f"Question: {question}"},
-            {"role": "assistant", "content": f"Cards: {cards}"},
-        ]
+        model="gpt-3.5-turbo",
+        messages=messages
     )
-    return response.choices[0].message.content
+
+    # Get the interpretation and add it to the conversation
+    interpretation = response.choices[0].message.content
+    messages.append({"role": "assistant", "content": interpretation})
+
+    return interpretation
 
 
 def tarot_game(num_cards, question=None):
@@ -62,24 +62,36 @@ def tarot_game(num_cards, question=None):
     if not question:
         return
 
-    interpretation = interpret_cards(question, cards)
+    # Initialize conversation history with a system message
+    prompt = (
+        f"We are playing a game of tarot using the Rider-Waite deck.\n"
+        "Please interpret these cards in response to the question.  Please give a brief description of the general "
+        "meaning of the card(s) followed by an interpretation of the draw based on the question asked."
+    )
+    messages = [
+        {"role": "system", "content": prompt}
+    ]
+
+    interpretation = interpret_cards(messages, question, cards)
     print(f"\nInterpretation based on your question:\n{interpretation}")
+
     while True:
         clarifier_choice = input("Would you like to draw a clarifying card? (yes/no): ").lower()
         if clarifier_choice == 'no':
             break
         if clarifier_choice == 'yes':
-            clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
-            print(f"\nYour clarifying card is: {clarifier[0]}")
-            cards.append(clarifier[0])
-            if question:
-                interpretation = interpret_cards(question, cards)
-                print(f"\nInterpretation based on your question with clarifiers:\n{interpretation}")
+            clarifier_question = input("Please enter a clarifying question: ")
+            if clarifier_question:
+                clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
+                print(f"\nYour clarifying card is: {clarifier[0]}")
+                cards.append(clarifier[0])
+                interpretation = interpret_cards(messages, clarifier_question, cards)
+                print(f"\nInterpretation based on your clarifier question:\n{interpretation}")
         else:
             print("Invalid choice. Please enter 'yes' or 'no'.")
 
+
 if __name__ == "__main__":
-    # models = openai_client.models.list()
     parser = argparse.ArgumentParser(description="Tarot Card Drawing Game")
     parser.add_argument(
         '--num-cards',
