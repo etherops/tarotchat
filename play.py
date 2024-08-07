@@ -95,7 +95,8 @@ def interpret_cards(question, cards):
     prompt = (
         f"We are playing a game of tarot using the Rider-Waite deck.\n"
         "Please interpret these cards in response to the question.  Please give a brief description of the general "
-        "meaning of the card(s) followed by an interpretation of the draw based on the question asked."
+        "meaning of the card(s) including the traditional Ryder Waite imagry, followed by an interpretation of the "
+        "draw based on the question asked."
     )
     messages = [
         {"role": "system", "content": prompt}
