@@ -2,6 +2,7 @@ import random
 import argparse
 from openai import OpenAI
 import os
+import subprocess
 
 # Get the OpenAI API key from the environment variable
 openai_client = OpenAI(
@@ -36,7 +37,31 @@ def draw_cards(num_cards, deck):
     return deck[:num_cards]
 
 
-def interpret_cards(messages, question, cards):
+def display_card_images(cards):
+    """Display the images for the drawn cards."""
+    for card in cards:
+        # Normalize card name to match the file name format
+        card_image_name = ("RWS_Tarot_" + card.replace(" - ", "_").replace(" ", "_")+ ".jpg")
+        card_image_path = os.path.join("./assets", card_image_name)
+
+        if os.path.exists(card_image_path):
+            # Use qlmanage to display the image
+            subprocess.run(["qlmanage", "-p", card_image_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            print(f"Image not found for card path: {card_image_path}")
+
+
+def interpret_cards(question, cards):
+    # Initialize conversation history with a system message
+    prompt = (
+        f"We are playing a game of tarot using the Rider-Waite deck.\n"
+        "Please interpret these cards in response to the question.  Please give a brief description of the general "
+        "meaning of the card(s) followed by an interpretation of the draw based on the question asked."
+    )
+    messages = [
+        {"role": "system", "content": prompt}
+    ]
+
     # Append the user's question and drawn cards to the conversation
     messages.append({"role": "user", "content": f"Question: {question}"})
     messages.append({"role": "assistant", "content": f"Cards: {', '.join(cards)}"})
@@ -54,26 +79,14 @@ def interpret_cards(messages, question, cards):
     return interpretation
 
 
-def tarot_game(num_cards, question=None):
+def tarot_game(num_cards, question):
     deck = tarot_deck.copy()
     cards = draw_cards(num_cards, deck)
     print(f"\nYour cards are: {', '.join(cards)}")
 
-    if not question:
-        return
-
-    # Initialize conversation history with a system message
-    prompt = (
-        f"We are playing a game of tarot using the Rider-Waite deck.\n"
-        "Please interpret these cards in response to the question.  Please give a brief description of the general "
-        "meaning of the card(s) followed by an interpretation of the draw based on the question asked."
-    )
-    messages = [
-        {"role": "system", "content": prompt}
-    ]
-
-    interpretation = interpret_cards(messages, question, cards)
+    interpretation = interpret_cards(question, cards)
     print(f"\nInterpretation based on your question:\n{interpretation}")
+    display_card_images(cards)
 
     while True:
         clarifier_choice = input("Would you like to draw a clarifying card? (yes/no): ").lower()
@@ -85,8 +98,9 @@ def tarot_game(num_cards, question=None):
                 clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
                 print(f"\nYour clarifying card is: {clarifier[0]}")
                 cards.append(clarifier[0])
-                interpretation = interpret_cards(messages, clarifier_question, cards)
+                interpretation = interpret_cards(clarifier_question, cards)
                 print(f"\nInterpretation based on your clarifier question:\n{interpretation}")
+                display_card_images([clarifier[0]])
         else:
             print("Invalid choice. Please enter 'yes' or 'no'.")
 
