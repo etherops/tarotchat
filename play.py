@@ -36,43 +36,62 @@ def draw_cards(num_cards, deck):
     random.shuffle(deck)
     return deck[:num_cards]
 
-def display_card_images(cards):
-    """Display the images for the drawn cards."""
+def display_card_images(cards, clarifiers=None):
+    """Display the images for the drawn cards, including clarifiers in a new row."""
     card_images = []
+    clarifier_images = []
+
+    # Load main card images
     for card in cards:
-        # Normalize card name to match the file name format
         card_image_name = ("RWS_Tarot_" + card.replace(" - ", "_").replace(" ", "_") + ".jpg")
         card_image_path = os.path.join("./assets", card_image_name)
-
         if os.path.exists(card_image_path):
             card_images.append(Image.open(card_image_path))
         else:
             print(f"Image not found for card: {card_image_path}")
 
-    if len(card_images) == 1:
-        card_images[0].show()
-    elif len(card_images) > 1:
-        # Concatenate images side by side
-        total_width = sum(img.width for img in card_images)
-        max_height = max(img.height for img in card_images)
-        combined_image = Image.new('RGB', (total_width, max_height))
+    # Load clarifier card images
+    if clarifiers:
+        for clarifier in clarifiers:
+            clarifier_image_name = ("RWS_Tarot_" + clarifier.replace(" - ", "_").replace(" ", "_") + ".jpg")
+            clarifier_image_path = os.path.join("./assets", clarifier_image_name)
+            if os.path.exists(clarifier_image_path):
+                clarifier_images.append(Image.open(clarifier_image_path))
+            else:
+                print(f"Image not found for clarifier: {clarifier_image_path}")
 
-        x_offset = 0
-        for img in card_images:
-            combined_image.paste(img, (x_offset, 0))
+    # Determine the size of the final combined image
+    max_card_width = max(img.width for img in card_images) if card_images else 0
+    max_card_height = max(img.height for img in card_images) if card_images else 0
+    max_clarifier_width = max(img.width for img in clarifier_images) if clarifier_images else 0
+    max_clarifier_height = max(img.height for img in clarifier_images) if clarifier_images else 0
+
+    total_width = max(max_card_width * len(card_images), max_clarifier_width * len(clarifier_images))
+    total_height = max_card_height + max_clarifier_height
+
+    combined_image = Image.new('RGB', (total_width, total_height), (255, 255, 255))  # White background
+
+    # Center main card images
+    x_offset = (total_width - (max_card_width * len(card_images))) // 2
+    for img in card_images:
+        combined_image.paste(img, (x_offset, 0))
+        x_offset += img.width
+
+    # Center clarifier card images
+    if clarifier_images:
+        y_offset = max_card_height
+        x_offset = (total_width - (max_clarifier_width * len(clarifier_images))) // 2
+        for img in clarifier_images:
+            combined_image.paste(img, (x_offset, y_offset))
             x_offset += img.width
 
-        # Save the combined image to a temporary file
-        combined_image_path = "./assets/temp_combined_image.jpg"
-        combined_image.save(combined_image_path)
-
-        # Use qlmanage to display the combined image
-        subprocess.run(["qlmanage", "-p", combined_image_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # Optionally, remove the temporary file after previewing
-        os.remove(combined_image_path)
+    # Save and display the combined image
+    combined_image_path = "./assets/temp_combined_image.jpg"
+    combined_image.save(combined_image_path)
+    subprocess.run(["qlmanage", "-p", combined_image_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    os.remove(combined_image_path)
 
 def interpret_cards(question, cards):
-    # Initialize conversation history with a system message
     prompt = (
         f"We are playing a game of tarot using the Rider-Waite deck.\n"
         "Please interpret these cards in response to the question.  Please give a brief description of the general "
@@ -82,17 +101,14 @@ def interpret_cards(question, cards):
         {"role": "system", "content": prompt}
     ]
 
-    # Append the user's question and drawn cards to the conversation
     messages.append({"role": "user", "content": f"Question: {question}"})
     messages.append({"role": "assistant", "content": f"Cards: {', '.join(cards)}"})
 
-    # Send the conversation to OpenAI for interpretation
     response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=messages
     )
 
-    # Get the interpretation and add it to the conversation
     interpretation = response.choices[0].message.content
     messages.append({"role": "assistant", "content": interpretation})
 
@@ -106,9 +122,9 @@ def tarot_game(num_cards, question):
     interpretation = interpret_cards(question, cards)
     print(f"\nInterpretation based on your question:\n{interpretation}")
 
-    # Display card images
     display_card_images(cards)
 
+    clarifiers = []
     while True:
         clarifier_choice = input("Would you like to draw a clarifying card? (yes/no): ").lower()
         if clarifier_choice == 'no':
@@ -117,11 +133,11 @@ def tarot_game(num_cards, question):
             clarifier_question = input("Please enter a clarifying question: ")
             if clarifier_question:
                 clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
+                clarifiers.append(clarifier[0])
                 print(f"\nYour clarifying card is: {clarifier[0]}")
-                cards.append(clarifier[0])
-                interpretation = interpret_cards(clarifier_question, cards)
+                interpretation = interpret_cards(clarifier_question, clarifiers)
                 print(f"\nInterpretation based on your clarifier question:\n{interpretation}")
-                display_card_images([clarifier[0]])
+                display_card_images(cards, clarifiers)
         else:
             print("Invalid choice. Please enter 'yes' or 'no'.")
 
@@ -146,7 +162,7 @@ if __name__ == "__main__":
         while True:
             print("\nHow many cards would you like to draw?")
             print("1: Draw one card")
-            print("2: Draw three cards")
+            print("3: Draw three cards")
             choice = input("Please choose an option (1 or 3): ")
 
             if choice == '1':
