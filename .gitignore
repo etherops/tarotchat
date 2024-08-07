@@ -163,3 +163,6 @@ cython_debug/
 
 # intellij
 .idea
+
+# tarotchat
+assets/temp_combined_image.jpg
