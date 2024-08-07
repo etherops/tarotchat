@@ -3,6 +3,7 @@ import argparse
 from openai import OpenAI
 import os
 import subprocess
+from PIL import Image  # Import the Pillow library
 
 # Get the OpenAI API key from the environment variable
 openai_client = OpenAI(
@@ -30,26 +31,45 @@ tarot_deck = [
     "Page of Pentacles", "Knight of Pentacles", "Queen of Pentacles", "King of Pentacles"
 ]
 
-
 def draw_cards(num_cards, deck):
     """Draw a specified number of cards from the deck."""
     random.shuffle(deck)
     return deck[:num_cards]
 
-
 def display_card_images(cards):
     """Display the images for the drawn cards."""
+    card_images = []
     for card in cards:
         # Normalize card name to match the file name format
-        card_image_name = ("RWS_Tarot_" + card.replace(" - ", "_").replace(" ", "_")+ ".jpg")
+        card_image_name = ("RWS_Tarot_" + card.replace(" - ", "_").replace(" ", "_") + ".jpg")
         card_image_path = os.path.join("./assets", card_image_name)
 
         if os.path.exists(card_image_path):
-            # Use qlmanage to display the image
-            subprocess.run(["qlmanage", "-p", card_image_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            card_images.append(Image.open(card_image_path))
         else:
-            print(f"Image not found for card path: {card_image_path}")
+            print(f"Image not found for card: {card_image_path}")
 
+    if len(card_images) == 1:
+        card_images[0].show()
+    elif len(card_images) > 1:
+        # Concatenate images side by side
+        total_width = sum(img.width for img in card_images)
+        max_height = max(img.height for img in card_images)
+        combined_image = Image.new('RGB', (total_width, max_height))
+
+        x_offset = 0
+        for img in card_images:
+            combined_image.paste(img, (x_offset, 0))
+            x_offset += img.width
+
+        # Save the combined image to a temporary file
+        combined_image_path = "./assets/temp_combined_image.jpg"
+        combined_image.save(combined_image_path)
+
+        # Use qlmanage to display the combined image
+        subprocess.run(["qlmanage", "-p", combined_image_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Optionally, remove the temporary file after previewing
+        os.remove(combined_image_path)
 
 def interpret_cards(question, cards):
     # Initialize conversation history with a system message
@@ -78,7 +98,6 @@ def interpret_cards(question, cards):
 
     return interpretation
 
-
 def tarot_game(num_cards, question):
     deck = tarot_deck.copy()
     cards = draw_cards(num_cards, deck)
@@ -86,6 +105,8 @@ def tarot_game(num_cards, question):
 
     interpretation = interpret_cards(question, cards)
     print(f"\nInterpretation based on your question:\n{interpretation}")
+
+    # Display card images
     display_card_images(cards)
 
     while True:
@@ -103,7 +124,6 @@ def tarot_game(num_cards, question):
                 display_card_images([clarifier[0]])
         else:
             print("Invalid choice. Please enter 'yes' or 'no'.")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tarot Card Drawing Game")
