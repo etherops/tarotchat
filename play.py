@@ -115,6 +115,7 @@ def interpret_cards(question, cards):
 
     return interpretation
 
+
 def tarot_game(num_cards, question):
     deck = tarot_deck.copy()
     cards = draw_cards(num_cards, deck)
@@ -127,22 +128,29 @@ def tarot_game(num_cards, question):
 
     clarifiers = []
     while True:
-        clarifier_choice = input("Would you like to draw a clarifying card? (yes/no): ").lower()
-        if clarifier_choice == 'no':
-            break
-        if clarifier_choice == 'yes':
-            clarifier_question = input("Please enter a clarifying question: ")
-            if clarifier_question:
-                clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
-                clarifiers.append(clarifier[0])
-                print(f"\nYour clarifying card is: {clarifier[0]}")
-                interpretation = interpret_cards(clarifier_question, clarifiers)
-                print(f"\nInterpretation based on your clarifier question:\n{interpretation}")
-                display_card_images(cards, clarifiers)
-        else:
-            print("Invalid choice. Please enter 'yes' or 'no'.")
+        clarifier_question = input(
+            "To draw a clarifier, enter a clarifying question or simply press Enter. Type 'no/N/No' to exit: "
+        ).strip()
 
-if __name__ == "__main__":
+        if clarifier_question.lower() in ['no', 'n']:
+            print("Exiting...")
+            break
+
+        clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
+        clarifiers.append(clarifier[0])
+        print(f"\nYour clarifying card is: {clarifier[0]}")
+
+        if clarifier_question:
+            clarifier_question = "Please interpret the reading with this additional clarifying card."
+
+        interpretation = interpret_cards(clarifier_question, clarifiers)
+        print(f"\nInterpretation based on your clarifier question:\n{interpretation}")
+
+        display_card_images(cards, clarifiers)
+
+
+def _parse_args():
+
     parser = argparse.ArgumentParser(description="Tarot Card Drawing Game")
     parser.add_argument(
         '--num-cards',
@@ -167,12 +175,19 @@ if __name__ == "__main__":
             choice = input("Please choose an option (1 or 3): ")
 
             if choice == '1':
-                tarot_game(1, args.question)
+                args.num_cards = 1
                 break
             elif choice == '3':
-                tarot_game(3, args.question)
+                args.num_cards = 3
                 break
             else:
                 print("Invalid choice. Please enter 1 or 3.")
-    else:
+    return args
+
+if __name__ == "__main__":
+    try:
+        args = _parse_args()
         tarot_game(args.num_cards, args.question)
+    except KeyboardInterrupt:
+        print("\n\nInterrupted! Exiting the tarot game...")
+
