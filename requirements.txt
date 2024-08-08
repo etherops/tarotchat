@@ -1,1 +1,2 @@
 pillow~=10.4
+openai~=1.40

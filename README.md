@@ -18,17 +18,14 @@ This Python script is a tarot card drawing game that uses the Rider-Waite deck. 
 ## Installation
 
 1. Clone this repository or download the script.
-
-2. Install the required Python packages using pip:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install --upgrade pip
-   pip install openai
-   ```
-3. Set your OpenAI API key as an environment variable:
+2. Set your OpenAI API key as an environment variable:
    ```bash
    export OPENAI_API_KEY="your_openai_api_key_here"
+   ```
+
+3. Install and run
+   ```bash
+   ./install_and_run.sh
    ```
 
 ## Usage
