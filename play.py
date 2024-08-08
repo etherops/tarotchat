@@ -91,20 +91,7 @@ def display_card_images(cards, clarifiers=None):
     subprocess.run(["qlmanage", "-p", combined_image_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     os.remove(combined_image_path)
 
-def interpret_cards(question, cards):
-    prompt = (
-        f"We are playing a game of tarot using the Rider-Waite deck.\n"
-        "Please interpret these cards in response to the question.  Please give a brief description of the general "
-        "meaning of the card(s) including the traditional Ryder Waite imagry, followed by an interpretation of the "
-        "draw based on the question asked."
-    )
-    messages = [
-        {"role": "system", "content": prompt}
-    ]
-
-    messages.append({"role": "user", "content": f"Question: {question}"})
-    messages.append({"role": "assistant", "content": f"Cards: {', '.join(cards)}"})
-
+def interpret_cards(messages):
     response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=messages
@@ -121,7 +108,20 @@ def tarot_game(num_cards, question):
     cards = draw_cards(num_cards, deck)
     print(f"\nYour cards are: {', '.join(cards)}")
 
-    interpretation = interpret_cards(question, cards)
+    # Initialize conversation history with a system message
+    prompt = (
+        "We are playing a game of tarot using the Rider-Waite deck.\n"
+        "Please interpret these cards in response to the question. Please give a brief description of the general "
+        "meaning of the card(s) including the traditional Ryder Waite imagery, followed by an interpretation of the "
+        "draw based on the question asked."
+    )
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": f"Question: {question}"},
+        {"role": "assistant", "content": f"Cards: {', '.join(cards)}"}
+    ]
+
+    interpretation = interpret_cards(messages)
     print(f"\nInterpretation based on your question:\n{interpretation}")
 
     display_card_images(cards)
@@ -141,16 +141,16 @@ def tarot_game(num_cards, question):
         print(f"\nYour clarifying card is: {clarifier[0]}")
 
         if clarifier_question:
-            clarifier_question = "Please interpret the reading with this additional clarifying card."
+            messages.append({"role": "user", "content": f"Clarifier question: {clarifier_question}"})
+        messages.append({"role": "assistant", "content": f"Clarifier cards: {', '.join(clarifiers)}"})
 
-        interpretation = interpret_cards(clarifier_question, clarifiers)
+        interpretation = interpret_cards(messages)
         print(f"\nInterpretation based on your clarifier question:\n{interpretation}")
 
         display_card_images(cards, clarifiers)
 
 
 def _parse_args():
-
     parser = argparse.ArgumentParser(description="Tarot Card Drawing Game")
     parser.add_argument(
         '--num-cards',
@@ -183,6 +183,7 @@ def _parse_args():
             else:
                 print("Invalid choice. Please enter 1 or 3.")
     return args
+
 
 if __name__ == "__main__":
     try:
