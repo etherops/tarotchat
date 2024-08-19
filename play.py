@@ -126,7 +126,8 @@ def tarot_game(num_cards, question):
 
     display_card_images(cards)
 
-    clarifiers = []
+    clarifier_cards = []
+    clarifier_num = 1
     while True:
         clarifier_question = input(
             "To draw a clarifier, enter a clarifying question or simply press Enter. Type 'no/N/No' to exit: "
@@ -136,18 +137,22 @@ def tarot_game(num_cards, question):
             print("Exiting...")
             break
 
-        clarifier = draw_cards(1, deck[1:])  # Exclude the first card from being drawn again
-        clarifiers.append(clarifier[0])
-        print(f"\nYour clarifying card is: {clarifier[0]}")
+        if not clarifier_question:
+            clarifier_question = "Please further clarify based on the following clarifier card..."
 
-        if clarifier_question:
-            messages.append({"role": "user", "content": f"Clarifier question: {clarifier_question}"})
-        messages.append({"role": "assistant", "content": f"Clarifier cards: {', '.join(clarifiers)}"})
+        clarifier_card = draw_cards(1, deck[1:])[0]  # Exclude the first card from being drawn again
+        clarifier_cards.append(clarifier_card)
+        print(f"\nYour clarifying card is: {clarifier_card}")
+
+
+        messages.append({"role": "user", "content": f"Clarifier question: {clarifier_question}"})
+        messages.append({"role": "assistant", "content": f"Clarifier card: {clarifier_card}"})
 
         interpretation = interpret_cards(messages)
         print(f"\nInterpretation based on your clarifier question:\n{interpretation}")
 
-        display_card_images(cards, clarifiers)
+        display_card_images(cards, clarifier_cards)
+        clarifier_num+=1
 
 
 def _parse_args():
