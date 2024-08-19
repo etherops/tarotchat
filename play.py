@@ -4,6 +4,8 @@ from openai import OpenAI
 import os
 import subprocess
 from PIL import Image  # Import the Pillow library
+import inquirer
+from inquirer import errors
 
 # Get the OpenAI API key from the environment variable
 openai_client = OpenAI(
@@ -35,6 +37,25 @@ def draw_cards(num_cards, deck):
     """Draw a specified number of cards from the deck."""
     random.shuffle(deck)
     return deck[:num_cards]
+
+def select_cards(num_cards, deck):
+    """Select a specified number of cards from the deck using inquirer."""
+    def validate(_, current):
+        if len(current) != num_cards:
+            raise errors.ValidationError('',
+                                         reason=f"Please select {num_cards} card(s)! {len(current)} selected...")
+        return True
+
+    questions = [
+        inquirer.Checkbox(
+            "cards",
+            message=f"Select {num_cards} card(s)",
+            choices=deck,
+            validate=validate
+        ),
+    ]
+    answers = inquirer.prompt(questions)
+    return answers["cards"]
 
 def display_card_images(cards, clarifiers=None):
     """Display the images for the drawn cards, including clarifiers in a new row."""
@@ -103,9 +124,14 @@ def interpret_cards(messages):
     return interpretation
 
 
-def tarot_game(num_cards, question):
+def tarot_game(num_cards, question, select_cards_mode=False):
     deck = tarot_deck.copy()
-    cards = draw_cards(num_cards, deck)
+
+    if select_cards_mode:
+        cards = select_cards(num_cards, deck)
+    else:
+        cards = draw_cards(num_cards, deck)
+
     print(f"\nYour cards are: {', '.join(cards)}")
 
     # Initialize conversation history with a system message
@@ -140,7 +166,10 @@ def tarot_game(num_cards, question):
         if not clarifier_question:
             clarifier_question = "Please further clarify based on the following clarifier card..."
 
-        clarifier_card = draw_cards(1, deck[1:])[0]  # Exclude the first card from being drawn again
+        if select_cards_mode:
+            clarifier_card = select_cards(1, deck[1:])[0]
+        else:
+            clarifier_card = draw_cards(1, deck[1:])[0]  # Exclude the first card from being drawn again
         clarifier_cards.append(clarifier_card)
         print(f"\nYour clarifying card is: {clarifier_card}")
 
@@ -152,7 +181,7 @@ def tarot_game(num_cards, question):
         print(f"\nInterpretation based on your clarifier question:\n{interpretation}")
 
         display_card_images(cards, clarifier_cards)
-        clarifier_num+=1
+        clarifier_num += 1
 
 
 def _parse_args():
@@ -168,6 +197,11 @@ def _parse_args():
         '--question',
         type=str,
         help="A question to interpret the cards in response to"
+    )
+    parser.add_argument(
+        '--select-cards',
+        action='store_true',
+        help="Select cards manually instead of drawing them randomly"
     )
 
     args = parser.parse_args()
@@ -193,7 +227,6 @@ def _parse_args():
 if __name__ == "__main__":
     try:
         args = _parse_args()
-        tarot_game(args.num_cards, args.question)
+        tarot_game(args.num_cards, args.question, args.select_cards)
     except KeyboardInterrupt:
         print("\n\nInterrupted! Exiting the tarot game...")
-
