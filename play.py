@@ -134,6 +134,10 @@ def tarot_game(num_cards, question, select_cards_mode=False):
 
     print(f"\nYour cards are: {', '.join(cards)}")
 
+    # Remove drawn cards from the deck
+    for card in cards:
+        deck.remove(card)
+
     # Initialize conversation history with a system message
     prompt = (
         "We are playing a game of tarot using the Rider-Waite deck.\n"
@@ -167,12 +171,14 @@ def tarot_game(num_cards, question, select_cards_mode=False):
             clarifier_question = "Please further clarify based on the following clarifier card..."
 
         if select_cards_mode:
-            clarifier_card = select_cards(1, deck[1:])[0]
+            clarifier_card = select_cards(1, deck)[0]
         else:
-            clarifier_card = draw_cards(1, deck[1:])[0]  # Exclude the first card from being drawn again
+            clarifier_card = draw_cards(1, deck)[0]  # Exclude the first card from being drawn again
         clarifier_cards.append(clarifier_card)
         print(f"\nYour clarifying card is: {clarifier_card}")
 
+        # Remove the drawn clarifier card from the deck
+        deck.remove(clarifier_card)
 
         messages.append({"role": "user", "content": f"Clarifier question: {clarifier_question}"})
         messages.append({"role": "assistant", "content": f"Clarifier card: {clarifier_card}"})
