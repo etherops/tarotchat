@@ -125,7 +125,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .venv
 env/
 venv/
@@ -170,3 +169,6 @@ cython_debug/
 # tarotchat
 assets/temp_combined_image.jpg
 temp_combined_image.jpg
+
+# dotenv
+.env

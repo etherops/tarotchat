@@ -22,7 +22,10 @@ This Python script is a tarot card drawing game that uses the Rider-Waite deck. 
    ```bash
    export OPENAI_API_KEY="your_openai_api_key_here"
    ```
-
+   Or set it in a file called `.env`
+   ```bash
+   echo "export OPENAI_API_KEY=your_openai_api_key_here" >> .env
+   ```
 3. Install and run
    ```bash
    ./install_and_run.sh

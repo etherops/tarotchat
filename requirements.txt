@@ -1,3 +1,4 @@
 pillow~=10.4
 openai~=1.40
 inquirer~=3.4.0
+python-dotenv~=1.0.1

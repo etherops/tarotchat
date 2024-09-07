@@ -6,6 +6,10 @@ import subprocess
 from PIL import Image  # Import the Pillow library
 import inquirer
 from inquirer import errors
+from dotenv import load_dotenv  # Import load_dotenv from python-dotenv
+
+
+load_dotenv()
 
 # Get the OpenAI API key from the environment variable
 openai_client = OpenAI(
