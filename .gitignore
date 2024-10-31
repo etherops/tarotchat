@@ -167,8 +167,8 @@ cython_debug/
 .idea
 
 # tarotchat
-assets/temp_combined_image.jpg
-temp_combined_image.jpg
+assets/last_readings_cards.jpg
+last_readings_cards.jpg
 
 # dotenv
 .env

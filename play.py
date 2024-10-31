@@ -111,10 +111,9 @@ def display_card_images(cards, clarifiers=None):
             x_offset += img.width
 
     # Save and display the combined image
-    combined_image_path = "./assets/temp_combined_image.jpg"
+    combined_image_path = "./last_readings_cards.jpg"
     combined_image.save(combined_image_path)
     subprocess.run(["qlmanage", "-p", combined_image_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    os.remove(combined_image_path)
 
 def interpret_cards(messages):
     response = openai_client.chat.completions.create(
